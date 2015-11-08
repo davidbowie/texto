@@ -1,5 +1,5 @@
-# -*- coding: UTF-8 -*-
 #!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 
 '''
 Texto! - small Python script that sends SMS via https://bramka.play.pl
