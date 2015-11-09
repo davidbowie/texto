@@ -38,11 +38,13 @@ class Texto:
         parser.add_argument('passwd', help='Password')
         parser.add_argument('recipient', help='Message recipient')
         parser.add_argument('message', help='Message content')
+        parser.add_argument('-c', '--captcha', help='Command viewing captcha')
         args = parser.parse_args()
 
+        dirname, scriptname = os.path.split(os.path.abspath(__file__))
 
         sms = Play(args.login, args.passwd)
-        sms.SendMessage(args.recipient, args.message)
+        sms.SendMessage(args.recipient, args.message, args.captcha, dirname)
 
 if __name__ == "__main__":
     texto = Texto()

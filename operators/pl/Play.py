@@ -21,12 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Play.py - class handling logging to play.pl
 
-import pycurl
+import pycurl, os
 from StringIO import StringIO
 from bs4 import BeautifulSoup
 from urllib import urlencode
 from sys import stdin
-from os import getcwd
 
 class Play:
     def __init__(self, login, passwd):
@@ -330,7 +329,7 @@ class Play:
 
         self.url = self.START_URL
 
-    def SendMessage(self, phoneno, message):
+    def SendMessage(self, phoneno, message, command, dirname):
         """Method logs in, sends SMS, logs out"""
 
         self.Login()
@@ -340,6 +339,8 @@ class Play:
             return
 
         soup = BeautifulSoup(self.composeContent, 'html5lib')
+
+        messageJustSent = soup.find('input', attrs={'name':'MessageJustSent'})['value']
 
         try:
             captchaURL = self.START_URL + soup.find('img', id='imgCaptcha')['src']
@@ -351,7 +352,7 @@ class Play:
         if self.existCaptcha:
             self.c.setopt(self.c.URL, captchaURL)
             self.c.setopt(pycurl.HTTPGET, 1)
-            with open('captcha.jpg', 'w') as fcaptcha:
+            with open(dirname + '/captcha.jpg', 'w') as fcaptcha:
                 self.c.setopt(self.c.WRITEFUNCTION, fcaptcha.write)
                 if not self.PerformRequest(self.c, captchaURL):
                     print "Error downloading captcha!"
@@ -360,10 +361,12 @@ class Play:
                     return
                 else:
                     fcaptcha.close()
-                    print "Captcha stored in %s" % (getcwd() + '/captcha.jpg')
+                    os.system(command + " " + dirname + "/captcha.jpg 2>/dev/null &")
+                    print "Captcha stored in %s" % (dirname + '/captcha.jpg')
                     print "Enter captcha:"
                     captcha = stdin.readline().rstrip('\n')
                     self.messageForm['inputCaptcha'] = captcha
+
 
 
 
@@ -375,10 +378,10 @@ class Play:
         self.messageForm['randForm'] = soup.find('input', attrs={'name':'randForm'})['value']
         self.messageForm['content_in'] = msg
         self.messageForm['content_out'] = msg
-        self.messageForm['old_content'] = msg
+        self.messageForm['old_content'] = ''
         self.messageForm['sendform'] = 'on'
         self.messageForm['czas'] = '0'
-        self.messageForm['MessageJustSent'] = 'true'
+        self.messageForm['MessageJustSent'] = messageJustSent
 
         postFields = urlencode(self.messageForm)
         buffer = StringIO()
@@ -390,9 +393,20 @@ class Play:
         htmlResponse = buffer.getvalue()
         buffer.truncate(0)
 
+        soup = BeautifulSoup(htmlResponse, 'html5lib')
+
+        # Checking message sent flag #MessageJustSent
+        try:
+            if soup.find("input", attrs={'name': 'MessageJustSent'})['value'] == "false":
+                print "Error sending message!"
+                self.Logout()
+                return
+        except:
+            pass
+
         if self.debug:
             outfile = open("debug_confirm.html", "w")
-            outfile.write(BeautifulSoup(htmlResponse, 'html5lib').prettify().encode('UTF-8'))
+            outfile.write(soup.prettify().encode('UTF-8'))
             outfile.close()
 
 
@@ -412,10 +426,6 @@ class Play:
 
         self.composeContent = htmlResponse
 
-        if htmlResponse.find("Wiadomość została przyjęta"):
-            print "Message sent successfully!"
-        else:
-            print "Error sending message!"
+        print "Message sent successfully!"
 
         self.Logout()
-
