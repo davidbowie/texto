@@ -23,5 +23,5 @@ options:
 
 for example:
 
-`$ texto.py -c /usr/bin/ristretto 505123456 mypassword1 +48123456789 "This is a short text message!"`
+`$ texto.py -c /usr/bin/ristretto 505123456 mypassword1 +48123456789 "This is a short text message"`
 
